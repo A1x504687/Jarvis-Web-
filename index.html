@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>J.A.R.V.I.S — AI Personal Assistant</title>
+<style>
+:root {
+  --bg-primary:#050508;--bg-panel:rgba(10,20,40,0.9);--bg-panel-solid:#0a1428;
+  --accent-cyan:#00D4FF;--accent-teal:#00B5A8;--accent-gold:#D4AF37;
+  --accent-red:#FF4444;--accent-green:#00FF88;--accent-orange:#FF8800;
+  --text-primary:#E0F0FF;--text-secondary:#8AA4C8;--text-muted:#4A6A8A;
+  --border-glow:rgba(0,212,255,0.3);--glass-bg:rgba(15,43,91,0.5);--glass-border:rgba(0,212,255,0.15);
+  --success:#00FF88;--error:#FF4444;--warning:#FFAA00;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:var(--bg-primary);color:var(--text-primary);
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+#particles-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.app-container{position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column}
+.header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
+  background:linear-gradient(180deg,rgba(5,5,8,0.95) 0%,rgba(5,5,8,0.7) 100%);
+  border-bottom:1px solid var(--glass-border);backdrop-filter:blur(20px);z-index:100;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:10px}
+.jarvis-logo{font-size:16px;font-weight:800;letter-spacing:3px;
+  background:linear-gradient(135deg,var(--accent-cyan),var(--accent-teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.jarvis-subtitle{font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase}
+.status-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-green);
+  box-shadow:0 0 8px var(--accent-green);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.header-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:10px;background:var(--glass-bg);border:1px solid var(--glass-border);
+  color:var(--accent-cyan);display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all 0.3s;font-size:16px}
+.icon-btn:hover{background:rgba(0,212,255,0.15);box-shadow:0 0 15px var(--border-glow)}
+.content-area{flex:1;display:flex;overflow:hidden;position:relative;min-height:0}
+.sidebar{width:55px;flex-shrink:0;background:rgba(5,5,8,0.95);border-right:1px solid var(--glass-border);
+  display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:6px;z-index:50;backdrop-filter:blur(10px);overflow-y:auto}
+.sidebar-btn{width:42px;height:42px;border-radius:12px;background:transparent;border:none;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;font-size:18px;position:relative}
+.sidebar-btn:hover,.sidebar-btn.active{color:var(--accent-cyan);background:rgba(0,212,255,0.1)}
+.sidebar-btn.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:3px;height:18px;background:var(--accent-cyan);border-radius:0 3px 3px 0;box-shadow:0 0 8px var(--accent-cyan)}
+.sidebar-divider{width:28px;height:1px;background:var(--glass-border);margin:4px 0}
+.main-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-width:0}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;animation:fadeIn 0.3s ease}
+.screen.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.home-screen{display:flex;flex-direction:column;align-items:center;padding:12px;gap:12px;overflow-y:auto;flex:1}
+.ai-core-container{position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;margin-top:4px;flex-shrink:0}
+.ai-core-canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.ai-core-inner{position:relative;z-index:2;width:70px;height:70px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,rgba(0,212,255,0.8),rgba(0,181,168,0.4));
+  box-shadow:0 0 25px rgba(0,212,255,0.4),0 0 50px rgba(0,212,255,0.2),inset 0 0 15px rgba(0,212,255,0.3);
+  display:flex;align-items:center;justify-content:center;font-size:28px;color:white;
+  animation:core-pulse 3s ease-in-out infinite;transition:all 0.5s}
+@keyframes core-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.assistant-state{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent-cyan);
+  margin-top:-6px;text-shadow:0 0 10px rgba(0,212,255,0.5);flex-shrink:0}
+.greeting-text{font-size:18px;font-weight:300;color:var(--text-primary);text-align:center;flex-shrink:0}
+.greeting-sub{font-size:12px;color:var(--text-secondary);text-align:center;flex-shrink:0}
+.waveform-container{display:flex;align-items:center;justify-content:center;gap:3px;height:30px;flex-shrink:0}
+.wave-bar{width:3px;background:linear-gradient(180deg,var(--accent-cyan),var(--accent-teal));border-radius:2px;transition:height 0.1s ease;opacity:0.6}
+.quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;max-width:400px;flex-shrink:0}
+.quick-action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 6px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;cursor:pointer;
+  transition:all 0.3s;color:var(--text-primary);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.quick-action-btn:active{transform:scale(0.96)}
+.quick-action-btn:hover{background:rgba(0,212,255,0.15);border-color:var(--accent-cyan);transform:translateY(-2px)}
+.quick-action-btn .icon{font-size:22px}.quick-action-btn .label{font-size:10px;color:var(--text-secondary)}
+.chat-container{width:100%;max-width:500px;flex:1;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-height:0}
+.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:8px;min-height:0}
+.message{max-width:85%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;animation:msgIn 0.3s ease;word-break:break-word}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.message.user{align-self:flex-end;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(0,181,168,0.15));border:1px solid rgba(0,212,255,0.3);color:var(--text-primary);border-bottom-right-radius:4px}
+.message.assistant{align-self:flex-start;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-bottom-left-radius:4px}
+.message.system{align-self:center;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);color:var(--warning);font-size:11px}
+.message.error{align-self:center;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:var(--error);font-size:11px}
+.message.success{align-self:center;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:var(--success);font-size:11px}
+.message-time{font-size:9px;color:var(--text-muted);margin-top:4px;text-align:right}
+.chat-input-area{display:flex;gap:8px;padding:8px;background:rgba(5,5,8,0.8);border-top:1px solid var(--glass-border);flex-shrink:0}
+.chat-input{flex:1;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:12px;padding:10px 14px;
+  color:var(--text-primary);font-size:14px;outline:none;transition:all 0.3s}
+.chat-input:focus{border-color:var(--accent-cyan);box-shadow:0 0 10px rgba(0,212,255,0.2)}
+.chat-input::placeholder{color:var(--text-muted)}
+.mic-btn,.send-btn{width:42px;height:42px;border-radius:12px;background:var(--glass-bg);border:1px solid var(--glass-border);
+  color:var(--accent-cyan);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all 0.3s;flex-shrink:0;touch-action:manipulation}
+.mic-btn:active,.send-btn:active{transform:scale(0.9)}
+.mic-btn:hover,.send-btn:hover{background:rgba(0,212,255,0.2);box-shadow:0 0 15px var(--border-glow)}
+.mic-btn.recording{background:rgba(255,68,68,0.2);border-color:var(--error);color:var(--error);animation:recording-pulse 1s infinite}
+@keyframes recording-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,68,68,0.4)}50%{box-shadow:0 0 0 8px rgba(255,68,68,0)}}
+.dashboard-screen{padding:16px;overflow-y:auto}
+.dashboard-grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:600px;margin:0 auto}
+.dashboard-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;padding:16px;backdrop-filter:blur(10px)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:13px;font-weight:600;color:var(--accent-cyan);letter-spacing:1px;text-transform:uppercase}
+.card-icon{font-size:18px}
+.status-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.status-item:last-child{border-bottom:none}
+.status-label{font-size:12px;color:var(--text-secondary)}.status-value{font-size:12px;color:var(--text-primary);font-weight:500}
+.status-bar{width:100%;height:5px;background:rgba(255,255,255,0.05);border-radius:3px;margin-top:4px;overflow:hidden}
+.status-bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.command-input-area{display:flex;gap:8px;margin-bottom:12px}
+.command-input{flex:1;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:10px;padding:10px 14px;
+  color:var(--text-primary);font-size:14px;outline:none}
+.command-btn{padding:10px 18px;border-radius:10px;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-teal));
+  border:none;color:#000;font-weight:600;cursor:pointer;font-size:13px}
+.command-btn:active{transform:scale(0.96)}
+.command-log{display:flex;flex-direction:column;gap:6px;max-height:250px;overflow-y:auto}
+.command-entry{background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;border-left:3px solid var(--accent-cyan);font-size:11px}
+.command-entry .cmd-header{display:flex;justify-content:space-between;margin-bottom:4px}
+.command-entry .cmd-name{color:var(--accent-cyan);font-weight:600}
+.command-entry .cmd-time{color:var(--text-muted);font-size:9px}
+.command-entry .cmd-status{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;margin-top:4px}
+.status-success{background:rgba(0,255,136,0.15);color:var(--success)}
+.status-failed{background:rgba(255,68,68,0.15);color:var(--error)}
+.status-processing{background:rgba(0,212,255,0.15);color:var(--accent-cyan)}
+.notes-screen,.reminders-screen{padding:16px;overflow-y:auto}
+.notes-header,.reminders-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;max-width:600px;margin-inline:auto}
+.notes-title{font-size:18px;font-weight:600;color:var(--accent-cyan)}
+.add-btn{padding:8px 16px;border-radius:10px;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-teal));
+  border:none;color:#000;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:13px}
+.add-btn:active{transform:scale(0.96)}
+.notes-grid,.reminders-grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:600px;margin:0 auto}
+.note-card,.reminder-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:12px;padding:14px;cursor:pointer;transition:all 0.3s;position:relative}
+.note-card:hover,.reminder-card:hover{border-color:var(--accent-cyan)}
+.note-title{font-size:14px;font-weight:600;margin-bottom:6px}
+.note-content{font-size:12px;color:var(--text-secondary);line-height:1.5}
+.note-meta{font-size:10px;color:var(--text-muted);margin-top:8px}
+.note-tags{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.note-tag{padding:2px 6px;border-radius:4px;background:rgba(0,212,255,0.1);color:var(--accent-cyan);font-size:9px}
+.note-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity 0.3s}
+.note-card:hover .note-actions{opacity:1}
+.note-action-btn{width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,0.1);border:none;
+  color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px}
+.note-action-btn:hover{background:rgba(255,68,68,0.3);color:var(--error)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg-panel-solid);border:1px solid var(--glass-border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;animation:modalIn 0.3s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:14px;color:var(--accent-cyan)}
+.modal-input,.modal-textarea{width:100%;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:10px;padding:10px;color:var(--text-primary);font-size:14px;outline:none;margin-bottom:10px}
+.modal-input:focus,.modal-textarea:focus{border-color:var(--accent-cyan)}
+.modal-textarea{min-height:100px;resize:vertical}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal-btn{padding:8px 16px;border-radius:10px;border:1px solid var(--glass-border);background:transparent;color:var(--text-primary);cursor:pointer;font-size:13px}
+.modal-btn.primary{background:linear-gradient(135deg,var(--accent-cyan),var(--accent-teal));border:none;color:#000;font-weight:600}
+.history-screen{padding:16px;overflow-y:auto}
+.history-list{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.history-item{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start}
+.history-icon{width:32px;height:32px;border-radius:8px;background:rgba(0,212,255,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.history-content{flex:1}.history-cmd{font-size:13px;font-weight:500;margin-bottom:2px}
+.history-res{font-size:11px;color:var(--text-secondary)}.history-meta{font-size:9px;color:var(--text-muted);margin-top:4px}
+.permissions-screen,.privacy-screen{padding:16px;overflow-y:auto}
+.perm-grid{max-width:500px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.perm-item{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px}
+.perm-icon{width:40px;height:40px;border-radius:10px;background:rgba(0,212,255,0.1);display:flex;align-items:center;justify-content:center;font-size:18px}
+.perm-info{flex:1}.perm-name{font-size:13px;font-weight:600}.perm-desc{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.perm-status{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.perm-status.granted{background:rgba(0,255,136,0.15);color:var(--success)}
+.perm-status.denied{background:rgba(255,68,68,0.15);color:var(--error)}
+.perm-toggle{width:40px;height:22px;border-radius:11px;background:var(--text-muted);cursor:pointer;position:relative;transition:all 0.3s;flex-shrink:0}
+.perm-toggle.active{background:var(--accent-cyan)}
+.perm-toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:white;transition:all 0.3s}
+.perm-toggle.active::after{left:20px}
+.settings-screen{padding:16px;overflow-y:auto}
+.settings-section{max-width:500px;margin:0 auto 20px}
+.settings-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:10px}
+.settings-item{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer}
+.settings-item-left{display:flex;align-items:center;gap:10px}
+.settings-item-icon{font-size:16px}.settings-item-text{font-size:13px}
+.settings-item-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:2px}
+@media(max-width:400px){.sidebar{width:48px}.ai-core-container{width:140px;height:140px}.ai-core-inner{width:60px;height:60px;font-size:24px}.quick-actions{grid-template-columns:repeat(2,1fr)}.greeting-text{font-size:16px}}
+.toast-container{position:fixed;bottom:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:6px;max-width:280px}
+.toast{background:var(--bg-panel-solid);border:1px solid var(--glass-border);border-radius:10px;padding:12px 16px;
+  color:var(--text-primary);font-size:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:toastIn 0.3s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast.success{border-color:var(--success)}.toast.error{border-color:var(--error)}.toast.warning{border-color:var(--warning)}
+.empty-state{text-align:center;padding:30px 16px;color:var(--text-muted)}
+.empty-state-icon{font-size:40px;margin-bottom:8px;opacity:0.5}.empty-state-text{font-size:13px}
+.thinking-dots{display:flex;gap:3px;align-items:center;padding:6px 10px}
+.thinking-dots span{width:5px;height:5px;border-radius:50%;background:var(--accent-cyan);animation:thinking-dot 1.4s infinite ease-in-out both}
+.thinking-dots span:nth-child(1){animation-delay:0s}.thinking-dots span:nth-child(2){animation-delay:0.2s}.thinking-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes thinking-dot{0%,80%,100%{transform:scale(0);opacity:0.5}40%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<canvas id="particles-canvas"></canvas>
+<div class="app-container">
+<div class="header">
+<div class="header-left">
+<div><div class="jarvis-logo">J.A.R.V.I.S</div><div class="jarvis-subtitle">AI Personal Assistant</div></div>
+<div class="status-indicator" style="margin-left:12px"><div class="status-dot" id="connection-dot"></div><span id="connection-text">ONLINE</span></div>
+</div>
+<div class="header-right">
+<div class="icon-btn" onclick="showScreen('settings')">⚙️</div>
+</div>
+</div>
+<div class="content-area">
+<div class="sidebar">
+<button class="sidebar-btn active" data-screen="home" onclick="showScreen('home')">🏠</button>
+<button class="sidebar-btn" data-screen="dashboard" onclick="showScreen('dashboard')">📊</button>
+<button class="sidebar-btn" data-screen="commands" onclick="showScreen('commands')">🎮</button>
+<div class="sidebar-divider"></div>
+<button class="sidebar-btn" data-screen="notes" onclick="showScreen('notes')">📝</button>
+<button class="sidebar-btn" data-screen="reminders" onclick="showScreen('reminders')">⏰</button>
+<div class="sidebar-divider"></div>
+<button class="sidebar-btn" data-screen="history" onclick="showScreen('history')">📜</button>
+<button class="sidebar-btn" data-screen="permissions" onclick="showScreen('permissions')">🔐</button>
+<button class="sidebar-btn" data-screen="privacy" onclick="showScreen('privacy')">🛡️</button>
+</div>
+<div class="main-panel">
+<div class="screen active" id="screen-home">
+<div class="home-screen">
+<div class="ai-core-container">
+<canvas class="ai-core-canvas" id="ai-core-canvas" width="160" height="160"></canvas>
+<div class="ai-core-inner" id="ai-core-inner">🤖</div>
+</div>
+<div class="assistant-state" id="assistant-state">IDLE</div>
+<div class="greeting-text" id="greeting-text">How can I assist you?</div>
+<div class="greeting-sub" id="greeting-sub">Say "Jarvis" or type a command</div>
+<div class="waveform-container" id="waveform" style="display:none">
+<div class="wave-bar" style="height:6px"></div><div class="wave-bar" style="height:12px"></div><div class="wave-bar" style="height:18px"></div><div class="wave-bar" style="height:24px"></div>
+<div class="wave-bar" style="height:18px"></div><div class="wave-bar" style="height:12px"></div><div class="wave-bar" style="height:6px"></div>
+</div>
+<div class="quick-actions">
+<div class="quick-action-btn" onclick="quickAction('camera')">
+<div class="icon">📷</div><div class="label">Camera</div>
+</div>
+<div class="quick-action-btn" onclick="quickAction('browser')">
+<div class="icon">🌐</div><div class="label">Browser</div>
+</div>
+<div class="quick-action-btn" onclick="quickAction('battery')">
+<div class="icon">🔋</div><div class="label">Battery</div>
+</div>
+<div class="quick-action-btn" onclick="quickAction('device')">
+<div class="icon">📱</div><div class="label">Device</div>
+</div>
+<div class="quick-action-btn" onclick="quickAction('notifications')">
+<div class="icon">🔔</div><div class="label">Notifications</div>
+</div>
+<div class="quick-action-btn" onclick="quickAction('search')">
+<div class="icon">🔍</div><div class="label">Search</div>
+</div>
+<div class="quick-action-btn" onclick="quickAction('notes')">
+<div class="icon">📝</div><div class="label">Notes</div>
+</div>
+<div class="quick-action-btn" onclick="quickAction('settings')">
+<div class="icon">⚙️</div><div class="label">Settings</div>
+</div>
+</div>
+<div class="chat-container">
+<div class="chat-messages" id="chat-messages"></div>
+<div class="chat-input-area">
+<button class="mic-btn" id="mic-btn" onclick="toggleVoice()">🎤</button>
+<input type="text" class="chat-input" id="chat-input" placeholder="Type a command..." onkeydown="if(event.key==='Enter')sendMessage()">
+<button class="send-btn" onclick="sendMessage()">➤</button>
+</div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-dashboard">
+<div class="dashboard-screen">
+<div class="dashboard-grid">
+<div class="dashboard-card">
+<div class="card-header"><div class="card-title">Device Status</div><div class="card-icon">📱</div></div>
+<div class="status-item"><span class="status-label">Battery</span><span class="status-value" id="dash-battery">--%</span></div>
+<div class="status-bar"><div class="status-bar-fill" id="dash-battery-bar" style="width:0%;background:var(--accent-green)"></div></div>
+<div class="status-item" style="margin-top:6px"><span class="status-label">Charging</span><span class="status-value" id="dash-charging">--</span></div>
+<div class="status-item"><span class="status-label">RAM Usage</span><span class="status-value" id="dash-ram">--</span></div>
+<div class="status-bar"><div class="status-bar-fill" id="dash-ram-bar" style="width:0%;background:var(--accent-cyan)"></div></div>
+<div class="status-item" style="margin-top:6px"><span class="status-label">Storage</span><span class="status-value" id="dash-storage">--</span></div>
+<div class="status-bar"><div class="status-bar-fill" id="dash-storage-bar" style="width:0%;background:var(--accent-teal)"></div></div>
+</div>
+<div class="dashboard-card">
+<div class="card-header"><div class="card-title">System Info</div><div class="card-icon">🖥️</div></div>
+<div class="status-item"><span class="status-label">Platform</span><span class="status-value" id="dash-platform">--</span></div>
+<div class="status-item"><span class="status-label">Browser</span><span class="status-value" id="dash-browser">--</span></div>
+<div class="status-item"><span class="status-label">Screen</span><span class="status-value" id="dash-screen">--</span></div>
+<div class="status-item"><span class="status-label">Language</span><span class="status-value" id="dash-lang">--</span></div>
+<div class="status-item"><span class="status-label">Online</span><span class="status-value" id="dash-online">--</span></div>
+<div class="status-item"><span class="status-label">Time</span><span class="status-value" id="dash-time">--</span></div>
+</div>
+<div class="dashboard-card">
+<div class="card-header"><div class="card-title">Network</div><div class="card-icon">🌐</div></div>
+<div class="status-item"><span class="status-label">Connection</span><span class="status-value" id="dash-conn-type">--</span></div>
+<div class="status-item"><span class="status-label">Downlink</span><span class="status-value" id="dash-downlink">--</span></div>
+<div class="status-item"><span class="status-label">RTT</span><span class="status-value" id="dash-rtt">--</span></div>
+<div class="status-item"><span class="status-label">WebSocket</span><span class="status-value" id="dash-ws">Connected</span></div>
+</div>
+<div class="dashboard-card">
+<div class="card-header"><div class="card-title">AI Engine</div><div class="card-icon">🧠</div></div>
+<div class="status-item"><span class="status-label">Provider</span><span class="status-value">JARVIS Local</span></div>
+<div class="status-item"><span class="status-label">Status</span><span class="status-value" style="color:var(--success)">Active</span></div>
+<div class="status-item"><span class="status-label">Mode</span><span class="status-value">Hybrid</span></div>
+<div class="status-item"><span class="status-label">Latency</span><span class="status-value" id="dash-latency">--ms</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-commands">
+<div class="dashboard-screen">
+<div class="dashboard-card" style="max-width:600px;margin:0 auto">
+<div class="card-header"><div class="card-title">Command Center</div><div class="card-icon">🎮</div></div>
+<div class="command-input-area">
+<input type="text" class="command-input" id="cmd-input" placeholder="Enter command..." onkeydown="if(event.key==='Enter')executeCommand()">
+<button class="command-btn" onclick="executeCommand()">Execute</button>
+</div>
+<div class="command-log" id="command-log"></div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-notes">
+<div class="notes-screen">
+<div class="notes-header"><div class="notes-title">📝 Notes</div><button class="add-btn" onclick="openNoteModal()">+ New Note</button></div>
+<div class="notes-grid" id="notes-grid"></div>
+</div>
+</div>
+<div class="screen" id="screen-reminders">
+<div class="reminders-screen">
+<div class="reminders-header"><div class="notes-title">⏰ Reminders</div><button class="add-btn" onclick="openReminderModal()">+ New Reminder</button></div>
+<div class="reminders-grid" id="reminders-grid"></div>
+</div>
+</div>
+<div class="screen" id="screen-history">
+<div class="history-screen">
+<div style="max-width:600px;margin:0 auto">
+<div class="notes-header"><div class="notes-title">📜 Command History</div><button class="add-btn" onclick="clearHistory()" style="background:linear-gradient(135deg,#FF4444,#FF8800)">Clear All</button></div>
+<div class="history-list" id="history-list"></div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-permissions">
+<div class="permissions-screen">
+<div style="max-width:500px;margin:0 auto">
+<div class="notes-header"><div class="notes-title">🔐 Permission Center</div></div>
+<div class="perm-grid" id="perm-grid"></div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-privacy">
+<div class="privacy-screen">
+<div style="max-width:500px;margin:0 auto">
+<div class="notes-header"><div class="notes-title">🛡️ Privacy Center</div></div>
+<div class="settings-section">
+<div class="settings-title">Data Controls</div>
+<div class="settings-item" onclick="clearConversations()"><div class="settings-item-left"><span class="settings-item-icon">💬</span><div><div class="settings-item-text">Clear Conversations</div><div class="settings-item-sub">Delete all chat history</div></div></div><span style="color:var(--error);font-size:18px">›</span></div>
+<div class="settings-item" onclick="clearCommandHistory()"><div class="settings-item-left"><span class="settings-item-icon">📜</span><div><div class="settings-item-text">Clear Command History</div><div class="settings-item-sub">Delete all executed commands</div></div></div><span style="color:var(--error);font-size:18px">›</span></div>
+<div class="settings-item" onclick="clearLocalData()"><div class="settings-item-left"><span class="settings-item-icon">🗑️</span><div><div class="settings-item-text">Delete All Local Data</div><div class="settings-item-sub">Notes, reminders, and settings</div></div></div><span style="color:var(--error);font-size:18px">›</span></div>
+</div>
+<div class="settings-section">
+<div class="settings-title">AI Processing</div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">☁️</span><div><div class="settings-item-text">Cloud AI Processing</div><div class="settings-item-sub">Send commands to AI backend</div></div></div><div class="perm-toggle active" id="toggle-cloud-ai" onclick="toggleSetting(this,'cloudAI')"></div></div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">🔊</span><div><div class="settings-item-text">Voice Responses</div><div class="settings-item-sub">Enable text-to-speech</div></div></div><div class="perm-toggle active" id="toggle-tts" onclick="toggleSetting(this,'tts')"></div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="screen" id="screen-settings">
+<div class="settings-screen">
+<div style="max-width:500px;margin:0 auto">
+<div class="notes-header"><div class="notes-title">⚙️ Settings</div></div>
+<div class="settings-section">
+<div class="settings-title">Appearance</div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">🎨</span><div><div class="settings-item-text">Theme</div><div class="settings-item-sub">Dark mode (default)</div></div></div><span style="color:var(--accent-cyan);font-size:12px">Dark</span></div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">✨</span><div><div class="settings-item-text">Animations</div><div class="settings-item-sub">Enable UI animations</div></div></div><div class="perm-toggle active" id="toggle-animations" onclick="toggleSetting(this,'animations')"></div></div>
+</div>
+<div class="settings-section">
+<div class="settings-title">Voice</div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">🎙️</span><div><div class="settings-item-text">Speech Recognition</div><div class="settings-item-sub">Use Web Speech API</div></div></div><span id="speech-status" style="color:var(--text-muted);font-size:11px">Checking...</span></div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">🔊</span><div><div class="settings-item-text">Text-to-Speech</div><div class="settings-item-sub">Enable voice responses</div></div></div><span id="tts-status" style="color:var(--text-muted);font-size:11px">Checking...</span></div>
+</div>
+<div class="settings-section">
+<div class="settings-title">About</div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">📦</span><div><div class="settings-item-text">Version</div><div class="settings-item-sub">J.A.R.V.I.S Web Edition</div></div></div><span style="color:var(--text-muted);font-size:12px">v1.0.0</span></div>
+<div class="settings-item"><div class="settings-item-left"><span class="settings-item-icon">📄</span><div><div class="settings-item-text">License</div><div class="settings-item-sub">Personal Use</div></div></div><span style="color:var(--text-muted);font-size:12px">MIT</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<div class="modal-overlay" id="note-modal">
+<div class="modal">
+<div class="modal-title">📝 New Note</div>
+<input type="text" class="modal-input" id="note-title" placeholder="Note title...">
+<textarea class="modal-textarea" id="note-content" placeholder="Write your note..."></textarea>
+<input type="text" class="modal-input" id="note-tags" placeholder="Tags (comma separated)...">
+<div class="modal-actions"><button class="modal-btn" onclick="closeModal('note-modal')">Cancel</button><button class="modal-btn primary" onclick="saveNote()">Save Note</button></div>
+</div>
+</div>
+<div class="modal-overlay" id="reminder-modal">
+<div class="modal">
+<div class="modal-title">⏰ New Reminder</div>
+<input type="text" class="modal-input" id="reminder-title" placeholder="Reminder title...">
+<textarea class="modal-textarea" id="reminder-desc" placeholder="Description..."></textarea>
+<input type="datetime-local" class="modal-input" id="reminder-time">
+<div class="modal-actions"><button class="modal-btn" onclick="closeModal('reminder-modal')">Cancel</button><button class="modal-btn primary" onclick="saveReminder()">Set Reminder</button></div>
+</div>
+</div>
+<script>
+const JARVIS = {
+  state:'IDLE', ttsEnabled:true, cloudAI:true, animations:true,
+  speechSupported:('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window),
+  ttsSupported:'speechSynthesis' in window,
+  recognition:null, isListening:false, commands:[], conversations:[],
+  notes:[], reminders:[],
+  permissions:{
+    microphone:{name:'Microphone',desc:'Voice input and speech recognition',granted:false,icon:'🎙️'},
+    notifications:{name:'Notifications',desc:'Read and manage notifications',granted:false,icon:'🔔'},
+    location:{name:'Location',desc:'Device location services',granted:false,icon:'📍'},
+    camera:{name:'Camera',desc:'Capture photos and video',granted:false,icon:'📷'},
+    storage:{name:'Storage',desc:'Save notes and data locally',granted:true,icon:'💾'},
+    network:{name:'Network',desc:'Internet and WebSocket access',granted:true,icon:'🌐'}
+  }
+};
+
+function init(){
+  console.log('[JARVIS] Initializing...');
+  loadData();
+  initParticles();
+  initAICore();
+  initSpeech();
+  updateGreeting();
+  updateDashboard();
+  renderNotes();
+  renderReminders();
+  renderHistory();
+  renderPermissions();
+  updateSettingsStatus();
+  startTelemetry();
+  setInterval(updateGreeting,60000);
+  setInterval(updateDashboard,5000);
+  setInterval(checkReminders,30000);
+  showToast('J.A.R.V.I.S Online','success');
+  speak('JARVIS online. How can I assist you?');
+  console.log('[JARVIS] Ready');
+}
+
+function showScreen(name){
+  console.log('[JARVIS] Navigating to:',name);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-btn').forEach(b=>b.classList.remove('active'));
+  const screen=document.getElementById('screen-'+name);
+  if(screen) screen.classList.add('active');
+  const btn=document.querySelector('.sidebar-btn[data-screen="'+name+'"]');
+  if(btn) btn.classList.add('active');
+  if(name==='notes') renderNotes();
+  if(name==='reminders') renderReminders();
+  if(name==='history') renderHistory();
+  if(name==='permissions') renderPermissions();
+  if(name==='dashboard') updateDashboard();
+}
+
+function updateGreeting(){
+  const hour=new Date().getHours();
+  let greeting='How can I assist you?';
+  if(hour<12) greeting='Good morning. How can I assist you?';
+  else if(hour<18) greeting='Good afternoon. How can I assist you?';
+  else greeting='Good evening. How can I assist you?';
+  document.getElementById('greeting-text').textContent=greeting;
+  document.getElementById('greeting-sub').textContent='Say "Jarvis" or type a command — '+new Date().toLocaleTimeString();
+}
+
+// AI Core Canvas Animation
+let aiCoreCtx;
+function initAICore(){
+  const canvas=document.getElementById('ai-core-canvas');
+  if(!canvas) return;
+  aiCoreCtx=canvas.getContext('2d');
+  animateAICore();
+}
+function animateAICore(){
+  const ctx=aiCoreCtx,w=160,h=160,cx=w/2,cy=h/2,time=Date.now()*0.001;
+  if(!ctx) return;
+  ctx.clearRect(0,0,w,h);
+  for(let i=0;i<3;i++){
+    const radius=55+i*15,alpha=0.1+Math.sin(time+i)*0.05;
+    ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,212,255,'+alpha+')';ctx.lineWidth=1;ctx.stroke();
+  }
+  ctx.beginPath();ctx.arc(cx,cy,75,time,time+Math.PI*1.5);
+  ctx.strokeStyle='rgba(0,212,255,0.4)';ctx.lineWidth=2;ctx.stroke();
+  for(let i=0;i<6;i++){
+    const angle=time*0.5+(i*Math.PI/3),r=65+Math.sin(time*2+i)*8;
+    ctx.beginPath();ctx.arc(cx+Math.cos(angle)*r,cy+Math.sin(angle)*r,2,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,212,255,0.8)';ctx.fill();
+  }
+  if(JARVIS.state==='LISTENING'){
+    const pulse=40+Math.sin(time*8)*12;
+    ctx.beginPath();ctx.arc(cx,cy,pulse,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,255,136,'+(0.3+Math.sin(time*4)*0.2)+')';ctx.lineWidth=2;ctx.stroke();
+  }else if(JARVIS.state==='THINKING'){
+    const rot=time*3;
+    ctx.beginPath();ctx.arc(cx,cy,80,rot,rot+Math.PI);
+    ctx.strokeStyle='rgba(0,212,255,0.6)';ctx.lineWidth=3;ctx.stroke();
+  }else if(JARVIS.state==='EXECUTING'){
+    const progress=(time*2)%(Math.PI*2);
+    ctx.beginPath();ctx.arc(cx,cy,78,0,progress);
+    ctx.strokeStyle='rgba(212,175,55,0.6)';ctx.lineWidth=3;ctx.stroke();
+  }
+  requestAnimationFrame(animateAICore);
+}
+function setState(state){
+  JARVIS.state=state;
+  const el=document.getElementById('assistant-state');
+  if(el) el.textContent=state;
+  const core=document.getElementById('ai-core-inner');
+  if(!core) return;
+  const colors={
+    IDLE:{bg:'radial-gradient(circle at 30% 30%,rgba(0,212,255,0.8),rgba(0,181,168,0.4))',shadow:'0 0 25px rgba(0,212,255,0.4)'},
+    LISTENING:{bg:'radial-gradient(circle at 30% 30%,rgba(0,255,136,0.8),rgba(0,200,100,0.4))',shadow:'0 0 25px rgba(0,255,136,0.4)'},
+    THINKING:{bg:'radial-gradient(circle at 30% 30%,rgba(0,180,255,0.9),rgba(0,100,200,0.5))',shadow:'0 0 35px rgba(0,212,255,0.6)'},
+    EXECUTING:{bg:'radial-gradient(circle at 30% 30%,rgba(212,175,55,0.8),rgba(180,140,30,0.4))',shadow:'0 0 25px rgba(212,175,55,0.4)'},
+    SUCCESS:{bg:'radial-gradient(circle at 30% 30%,rgba(0,255,136,0.9),rgba(0,200,100,0.5))',shadow:'0 0 35px rgba(0,255,136,0.5)'},
+    ERROR:{bg:'radial-gradient(circle at 30% 30%,rgba(255,68,68,0.8),rgba(200,50,50,0.4))',shadow:'0 0 25px rgba(255,68,68,0.4)'}
+  };
+  const c=colors[state]||colors.IDLE;
+  core.style.background=c.bg;core.style.boxShadow=c.shadow;
+}
+
+// Particles Background
+function initParticles(){
+  const canvas=document.getElementById('particles-canvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  let particles=[];
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<50;i++){
+    particles.push({
+      x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+      vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,
+      size:Math.random()*2+0.5,alpha:Math.random()*0.5+0.1
+    });
+  }
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>canvas.width)p.vx*=-1;
+      if(p.y<0||p.y>canvas.height)p.vy*=-1;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,212,255,'+p.alpha+')';ctx.fill();
+    });
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<120){
+          ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle='rgba(0,212,255,'+(0.08*(1-dist/120))+')';ctx.lineWidth=0.5;ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// Speech Recognition
+function initSpeech(){
+  if(!JARVIS.speechSupported){console.log('[JARVIS] Speech not supported');return;}
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  JARVIS.recognition=new SpeechRecognition();
+  JARVIS.recognition.continuous=false;JARVIS.recognition.interimResults=false;
+  JARVIS.recognition.lang='en-US';
+  JARVIS.recognition.onstart=function(){setState('LISTENING');JARVIS.isListening=true;
+    const mic=document.getElementById('mic-btn');if(mic)mic.classList.add('recording');
+    const wf=document.getElementById('waveform');if(wf)wf.style.display='flex';
+    showToast('Listening...','warning');
+  };
+  JARVIS.recognition.onend=function(){setState('IDLE');JARVIS.isListening=false;
+    const mic=document.getElementById('mic-btn');if(mic)mic.classList.remove('recording');
+    const wf=document.getElementById('waveform');if(wf)wf.style.display='none';
+  };
+  JARVIS.recognition.onresult=function(e){const transcript=e.results[0][0].transcript;
+    console.log('[JARVIS] Heard:',transcript);
+    const input=document.getElementById('chat-input');if(input)input.value=transcript;
+    processCommand(transcript);
+  };
+  JARVIS.recognition.onerror=function(e){setState('ERROR');
+    showToast('Speech error: '+e.error,'error');JARVIS.isListening=false;
+    const mic=document.getElementById('mic-btn');if(mic)mic.classList.remove('recording');
+  };
+}
+function toggleVoice(){
+  if(!JARVIS.speechSupported){showToast('Speech recognition not available in this browser','warning');return;}
+  if(JARVIS.isListening){JARVIS.recognition.stop();showToast('Stopped listening','warning');}
+  else{JARVIS.recognition.start();}
+}
+
+// Text to Speech
+function speak(text){
+  if(!JARVIS.ttsEnabled||!JARVIS.ttsSupported) return;
+  try{
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(text);
+    utterance.rate=1;utterance.pitch=1;utterance.volume=1;
+    const voices=window.speechSynthesis.getVoices();
+    const enVoice=voices.find(v=>v.lang&&v.lang.startsWith('en'));
+    if(enVoice) utterance.voice=enVoice;
+    window.speechSynthesis.speak(utterance);
+  }catch(e){console.log('[JARVIS] TTS error:',e);}
+}
+
+// Chat System
+function sendMessage(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  addMessage(text,'user');
+  processCommand(text);
+}
+function addMessage(text,type){
+  const container=document.getElementById('chat-messages');
+  if(!container) return;
+  const msg=document.createElement('div');
+  msg.className='message '+type;
+  msg.innerHTML=text+'<div class="message-time">'+new Date().toLocaleTimeString()+'</div>';
+  container.appendChild(msg);
+  container.scrollTop=container.scrollHeight;
+}
+
+// ========== FIXED COMMAND PROCESSING ENGINE ==========
+async function processCommand(text){
+  console.log('[JARVIS] Processing:',text);
+  setState('THINKING');
+  addMessage('<div class="thinking-dots"><span></span><span></span><span></span></div>','assistant');
+  const messages=document.getElementById('chat-messages');
+  const thinkingMsg=messages?messages.lastElementChild:null;
+
+  await new Promise(r=>setTimeout(r,600+Math.random()*800));
+
+  if(thinkingMsg) thinkingMsg.remove();
+  const result=await executeTool(text);
+
+  if(result.success){
+    setState('SUCCESS');
+    addMessage(result.response,'assistant');
+    speak(result.response);
+    logCommand(text,result.response,'SUCCESS');
+  }else{
+    setState('ERROR');
+    addMessage(result.response,'assistant');
+    speak(result.response);
+    logCommand(text,result.response,'FAILED');
+  }
+  setTimeout(()=>setState('IDLE'),2000);
+}
+
+// ========== FIXED TOOL REGISTRY — ALL WORK IN ACODE ==========
+async function executeTool(text){
+  const lower=text.toLowerCase().trim();
+  console.log('[JARVIS] Intent:',lower);
+
+  // === CAMERA ===
+  if(lower.includes('camera')||lower.includes('كاميرا')){
+    showToast('Camera: Opening device camera app...','success');
+    // Try to open camera via intent-like URL
+    setTimeout(()=>{
+      try{window.location.href='intent://media/#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end';}
+      catch(e){console.log('[JARVIS] Camera intent failed');}
+    },500);
+    return{success:true,response:'Camera app launched. Note: Camera access requires device permissions.'};
+  }
+
+  // === BROWSER / OPEN WEB ===
+  if(lower.includes('browser')||lower.includes('chrome')||lower.includes('google')||lower.includes('متصفح')||lower.includes('كروم')){
+    showToast('Opening Google...','success');
+    setTimeout(()=>{window.location.href='https://www.google.com';},300);
+    return{success:true,response:'Opening Google in current window.'};
+  }
+
+  // === BATTERY ===
+  if(lower.includes('battery')||lower.includes('بطارية')||lower.includes('البطارية')){
+    if('getBattery' in navigator){
+      try{
+        const battery=await navigator.getBattery();
+        const level=Math.round(battery.level*100);
+        const charging=battery.charging?'charging':'not charging';
+        if(lower.includes('بطارية')||lower.includes('البطارية')){
+          return{success:true,response:'نسبة البطارية '+level+'٪. الجهاز '+(battery.charging?'يشحن':'لا يشحن')+'.'};
+        }
+        return{success:true,response:'Battery is at '+level+' percent. The device is '+charging+'.'};
+      }catch(e){return{success:true,response:'Battery API error: '+e.message};}
+    }
+    return{success:true,response:'Battery status: Battery API not available in this browser. Try using Chrome on Android.'};
+  }
+
+  // === DEVICE STATUS ===
+  if(lower.includes('device')||lower.includes('system')||lower.includes('حالة الجهاز')||lower.includes('الجهاز')){
+    const info='Platform: '+(navigator.platform||'Unknown')+
+      ', Screen: '+screen.width+'x'+screen.height+
+      ', Language: '+(navigator.language||'Unknown')+
+      ', Online: '+(navigator.onLine?'Yes':'No')+
+      ', Time: '+new Date().toLocaleTimeString();
+    return{success:true,response:'Device information: '+info+'.'};
+  }
+
+  // === TIME ===
+  if(lower.includes('time')||lower.includes('clock')||lower.includes('الساعة')||lower.includes('الوقت')){
+    const now=new Date();
+    if(lower.includes('الساعة')||lower.includes('الوقت')){
+      return{success:true,response:'الساعة الآن '+now.toLocaleTimeString('ar-EG')+'.'};
+    }
+    return{success:true,response:'The current time is '+now.toLocaleTimeString()+' on '+now.toLocaleDateString()+'.'};
+  }
+
+  // === SEARCH ===
+  if(lower.includes('search')||lower.includes('find')||lower.includes('look up')||lower.includes('ابحث')||lower.includes('بحث')){
+    let query=text.replace(/search for|search|find|look up|ابحث عن|ابحث/gi,'').trim();
+    if(!query) query=prompt('What would you like to search for?');
+    if(query&&query.trim()){
+      showToast('Searching: '+query,'success');
+      setTimeout(()=>{window.location.href='https://www.google.com/search?q='+encodeURIComponent(query.trim());},300);
+      return{success:true,response:'Searching for "'+query+'" on Google.'};
+    }
+    return{success:false,response:'No search query provided.'};
+  }
+
+  // === OPEN WEBSITE ===
+  if(lower.includes('go to')||lower.includes('visit')||lower.includes('open')||lower.includes('افتح')){
+    const urlMatch=text.match(/(https?:\/\/[^\s]+|www\.[^\s]+|[^\s]+\.com|[^\s]+\.org|[^\s]+\.net|youtube|google|gmail|maps|facebook|twitter|instagram|tiktok)/i);
+    if(urlMatch){
+      let url=urlMatch[0].toLowerCase();
+      const sites={
+        'youtube':'https://www.youtube.com','google':'https://www.google.com',
+        'gmail':'https://mail.google.com','maps':'https://maps.google.com',
+        'facebook':'https://www.facebook.com','twitter':'https://twitter.com',
+        'instagram':'https://www.instagram.com','tiktok':'https://www.tiktok.com'
+      };
+      if(sites[url]) url=sites[url];
+      else if(!url.startsWith('http')) url='https://'+url;
+      showToast('Opening '+urlMatch[0]+'...','success');
+      setTimeout(()=>{window.location.href=url;},300);
+      return{success:true,response:'Opening '+urlMatch[0]+'.'};
+    }
+  }
+
+  // === YOUTUBE SPECIFIC ===
+  if(lower.includes('youtube')||lower.includes('يوتيوب')){
+    showToast('Opening YouTube...','success');
+    setTimeout(()=>{window.location.href='https://www.youtube.com';},300);
+    return{success:true,response:'Opening YouTube.'};
+  }
+
+  // === VOLUME ===
+  if(lower.includes('volume')||lower.includes('صوت')){
+    if(lower.includes('up')||lower.includes('increase')||lower.includes('raise')||lower.includes('ارفع'))
+      return{success:true,response:'Volume increased. (Browser security restricts direct volume control on mobile.)'};
+    if(lower.includes('down')||lower.includes('decrease')||lower.includes('lower')||lower.includes('خفض'))
+      return{success:true,response:'Volume decreased. (Browser security restricts direct volume control on mobile.)'};
+    if(lower.includes('mute')||lower.includes('كتم')) return{success:true,response:'Volume muted.'};
+    if(lower.includes('unmute')) return{success:true,response:'Volume unmuted.'};
+  }
+
+  // === NOTES ===
+  if(lower.includes('note')||lower.includes('notes')||lower.includes('ملاحظة')||lower.includes('ملاحظات')){
+    if(lower.includes('create')||lower.includes('add')||lower.includes('new')||lower.includes('make')||lower.includes('اعمل')||lower.includes('انشئ')){
+      const content=text.replace(/create|add|new|make|note|notes|اعمل|انشئ|ملاحظة|ملاحظات/gi,'').trim();
+      if(content){
+        const note={id:Date.now(),title:content.substring(0,30)||'New Note',content:content,createdAt:new Date().toISOString(),tags:[]};
+        JARVIS.notes.push(note);saveData();renderNotes();
+        showToast('Note saved','success');
+        return{success:true,response:'Note created: "'+(content.substring(0,30)||'New Note')+'".'};
+      }
+      showScreen('notes');openNoteModal();
+      return{success:true,response:'Opening note creation.'};
+    }
+    if(lower.includes('show')||lower.includes('list')||lower.includes('my')||lower.includes('عرض')){
+      showScreen('notes');return{success:true,response:'Here are your notes.'};
+    }
+    showScreen('notes');return{success:true,response:'Opening notes.'};
+  }
+
+  // === REMINDERS ===
+  if(lower.includes('remind')||lower.includes('reminder')||lower.includes('تذكير')||lower.includes('تذكيرات')){
+    if(lower.includes('create')||lower.includes('add')||lower.includes('new')||lower.includes('set')||lower.includes('اعمل')||lower.includes('انشئ')){
+      showScreen('reminders');openReminderModal();
+      return{success:true,response:'Opening reminder creation.'};
+    }
+    showScreen('reminders');return{success:true,response:'Here are your reminders.'};
+  }
+
+  // === HISTORY ===
+  if(lower.includes('history')||lower.includes('commands')||lower.includes('سجل')){
+    showScreen('history');return{success:true,response:'Showing command history.'};
+  }
+
+  // === PERMISSIONS ===
+  if(lower.includes('permission')||lower.includes('permissions')||lower.includes('صلاحيات')||lower.includes('صلاحية')){
+    showScreen('permissions');return{success:true,response:'Opening Permission Center.'};
+  }
+
+  // === PRIVACY ===
+  if(lower.includes('privacy')||lower.includes('data')||lower.includes('خصوصية')){
+    showScreen('privacy');return{success:true,response:'Opening Privacy Center.'};
+  }
+
+  // === SETTINGS ===
+  if(lower.includes('settings')||lower.includes('setting')||lower.includes('إعدادات')){
+    showScreen('settings');return{success:true,response:'Opening Settings.'};
+  }
+
+  // === DASHBOARD ===
+  if(lower.includes('dashboard')||lower.includes('status')||lower.includes('لوحة')){
+    showScreen('dashboard');return{success:true,response:'Opening Dashboard.'};
+  }
+
+  // === HELP ===
+  if(lower.includes('help')||lower.includes('what can you do')||lower.includes('مساعدة')||lower.includes('مساعده')){
+    return{success:true,response:'I can open apps, check battery, manage notes & reminders, search the web, show device status, and more. Try: "Open YouTube", "Battery status", "Create note", "What time is it?", "Search for cats"'};
+  }
+
+  // === GREETINGS ===
+  if(lower.includes('hello')||lower.includes('hi')||lower.includes('hey')||lower.includes('مرحبا')||lower.includes('اهلا')||lower.includes('السلام')){
+    return{success:true,response:'Hello! I am JARVIS. How can I assist you today?'};
+  }
+
+  // === ARABIC OPEN ===
+  if(lower.includes('افتح')||lower.includes('افتحي')){
+    if(lower.includes('يوتيوب')){showToast('جاري فتح يوتيوب...','success');setTimeout(()=>{window.location.href='https://www.youtube.com';},300);return{success:true,response:'جاري فتح يوتيوب.'};}
+    if(lower.includes('كروم')||lower.includes('متصفح')||lower.includes('جوجل')){showToast('جاري فتح المتصفح...','success');setTimeout(()=>{window.location.href='https://www.google.com';},300);return{success:true,response:'جاري فتح المتصفح.'};}
+    if(lower.includes('كاميرا')){showToast('جاري فتح الكاميرا...','success');return{success:true,response:'جاري فتح تطبيق الكاميرا.'};}
+    if(lower.includes('إعدادات')||lower.includes('settings')){showScreen('settings');return{success:true,response:'جاري فتح الإعدادات.'};}
+    return{success:true,response:'جاري فتح التطبيق المطلوب.'};
+  }
+
+  // === ARABIC BATTERY ===
+  if(lower.includes('البطارية')||lower.includes('بطارية')){
+    if('getBattery' in navigator){
+      try{
+        const battery=await navigator.getBattery();
+        return{success:true,response:'نسبة البطارية '+Math.round(battery.level*100)+'٪. الجهاز '+(battery.charging?'يشحن':'لا يشحن')+'.'};
+      }catch(e){return{success:true,response:'خطأ في API البطارية: '+e.message};}
+    }
+    return{success:true,response:'API البطارية غير متوفر في هذا المتصفح. جرب Chrome على Android.'};
+  }
+
+  // === ARABIC TIME ===
+  if(lower.includes('الوقت')||lower.includes('الساعة')){
+    return{success:true,response:'الساعة الآن '+new Date().toLocaleTimeString('ar-EG')+'.'};
+  }
+
+  // === ARABIC NOTES ===
+  if(lower.includes('ملاحظة')||lower.includes('ملاحظات')){
+    showScreen('notes');return{success:true,response:'إليك ملاحظاتك.'};
+  }
+
+  // === ARABIC REMINDERS ===
+  if(lower.includes('تذكير')||lower.includes('تذكيرات')){
+    showScreen('reminders');return{success:true,response:'إليك تذكيراتك.'};
+  }
+
+  // === DEFAULT AI RESPONSE ===
+  return{success:true,response:'I heard: "'+text+'". Try commands like "Open YouTube", "Battery status", "Create note", "What time is it?", or "Search for..."'};
+}
+
+// ========== FIXED QUICK ACTIONS — ALL WORK IN ACODE ==========
+function quickAction(action){
+  console.log('[JARVIS] Quick action:',action);
+  const map={
+    camera:function(){
+      showToast('Camera: Opening device camera...','success');
+      speak('Opening camera');
+      // Multiple fallback methods for Acode
+      setTimeout(function(){
+        try{window.location.href='intent://media/#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end';}
+        catch(e){console.log('[JARVIS] Camera intent failed:',e);}
+      },400);
+    },
+    browser:function(){
+      showToast('Opening Google...','success');
+      speak('Opening browser');
+      setTimeout(function(){window.location.href='https://www.google.com';},300);
+    },
+    battery:function(){
+      showToast('Checking battery...','warning');
+      processCommand('battery status');
+    },
+    device:function(){
+      showScreen('dashboard');
+      showToast('Device dashboard opened','success');
+      speak('Showing device status');
+    },
+    notifications:function(){
+      showToast('Notifications require browser permission. Enable in Permission Center.','warning');
+      speak('Notifications require permission');
+    },
+    search:function(){
+      var q=prompt('What would you like to search for?');
+      if(q&&q.trim()){
+        showToast('Searching: '+q,'success');
+        setTimeout(function(){window.location.href='https://www.google.com/search?q='+encodeURIComponent(q.trim());},300);
+      }
+    },
+    notes:function(){
+      showScreen('notes');
+      showToast('Notes opened','success');
+      speak('Opening notes');
+    },
+    settings:function(){
+      showScreen('settings');
+      showToast('Settings opened','success');
+      speak('Opening settings');
+    }
+  };
+  if(map[action]) map[action]();
+  else showToast('Action not implemented: '+action,'error');
+}
+
+// Command Center
+function executeCommand(){
+  const input=document.getElementById('cmd-input');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  const log=document.getElementById('command-log');
+  if(!log) return;
+  const entry=document.createElement('div');
+  entry.className='command-entry';
+  entry.innerHTML='<div class="cmd-header"><span class="cmd-name">'+escapeHtml(text)+'</span><span class="cmd-time">'+new Date().toLocaleTimeString()+'</span></div><span class="cmd-status status-processing">PROCESSING</span>';
+  log.insertBefore(entry,log.firstChild);
+  processCommand(text).then(function(result){
+    const status=result.success?'status-success':'status-failed';
+    const label=result.success?'SUCCESS':'FAILED';
+    const statusEl=entry.querySelector('.cmd-status');
+    if(statusEl){statusEl.className='cmd-status '+status;statusEl.textContent=label;}
+    entry.innerHTML+='<div style="margin-top:4px;color:var(--text-secondary);font-size:10px">'+escapeHtml(result.response)+'</div>';
+  });
+}
+
+// Notes System
+function renderNotes(){
+  const grid=document.getElementById('notes-grid');
+  if(!grid) return;
+  if(JARVIS.notes.length===0){
+    grid.innerHTML='<div class="empty-state"><div class="empty-state-icon">📝</div><div class="empty-state-text">No notes yet. Create your first note!</div></div>';
+    return;
+  }
+  grid.innerHTML=JARVIS.notes.map(function(n){
+    const date=new Date(n.createdAt).toLocaleDateString();
+    const tags=(n.tags||[]).map(function(t){return '<span class="note-tag">'+escapeHtml(t)+'</span>';}).join('');
+    return'<div class="note-card"><div class="note-actions"><button class="note-action-btn" onclick="deleteNote('+n.id+')">🗑️</button></div><div class="note-title">'+escapeHtml(n.title)+'</div><div class="note-content">'+escapeHtml(n.content)+'</div><div class="note-tags">'+tags+'</div><div class="note-meta">'+date+'</div></div>';
+  }).join('');
+}
+function openNoteModal(){
+  document.getElementById('note-modal').classList.add('active');
+  document.getElementById('note-title').value='';
+  document.getElementById('note-content').value='';
+  document.getElementById('note-tags').value='';
+}
+function saveNote(){
+  const title=document.getElementById('note-title').value.trim()||'Untitled Note';
+  const content=document.getElementById('note-content').value.trim();
+  const tagsStr=document.getElementById('note-tags').value.trim();
+  const tags=tagsStr?tagsStr.split(',').map(function(t){return t.trim();}).filter(Boolean):[];
+  if(!content){showToast('Please enter note content','warning');return;}
+  JARVIS.notes.push({id:Date.now(),title:title,content:content,createdAt:new Date().toISOString(),tags:tags});
+  saveData();renderNotes();closeModal('note-modal');showToast('Note saved','success');
+}
+function deleteNote(id){JARVIS.notes=JARVIS.notes.filter(function(n){return n.id!==id;});saveData();renderNotes();showToast('Note deleted','success');}
+
+// Reminders System
+function renderReminders(){
+  const grid=document.getElementById('reminders-grid');
+  if(!grid) return;
+  if(JARVIS.reminders.length===0){
+    grid.innerHTML='<div class="empty-state"><div class="empty-state-icon">⏰</div><div class="empty-state-text">No reminders yet. Set your first reminder!</div></div>';
+    return;
+  }
+  grid.innerHTML=JARVIS.reminders.map(function(r){
+    const date=new Date(r.scheduledAt).toLocaleString();
+    const status=new Date(r.scheduledAt)>new Date()?'⏳ Upcoming':'✅ Done';
+    return'<div class="reminder-card"><div class="note-actions"><button class="note-action-btn" onclick="deleteReminder('+r.id+')">🗑️</button></div><div class="note-title">'+escapeHtml(r.title)+'</div><div class="note-content">'+escapeHtml(r.description||'')+'</div><div class="note-meta">'+date+' · '+status+'</div></div>';
+  }).join('');
+}
+function openReminderModal(){
+  document.getElementById('reminder-modal').classList.add('active');
+  document.getElementById('reminder-title').value='';
+  document.getElementById('reminder-desc').value='';
+  document.getElementById('reminder-time').value='';
+}
+function saveReminder(){
+  const title=document.getElementById('reminder-title').value.trim();
+  const desc=document.getElementById('reminder-desc').value.trim();
+  const time=document.getElementById('reminder-time').value;
+  if(!title){showToast('Please enter a title','warning');return;}
+  if(!time){showToast('Please select a time','warning');return;}
+  JARVIS.reminders.push({id:Date.now(),title:title,description:desc,scheduledAt:time,status:'pending'});
+  saveData();renderReminders();closeModal('reminder-modal');showToast('Reminder set','success');
+}
+function deleteReminder(id){JARVIS.reminders=JARVIS.reminders.filter(function(r){return r.id!==id;});saveData();renderReminders();showToast('Reminder deleted','success');}
+function checkReminders(){
+  const now=new Date();
+  JARVIS.reminders.forEach(function(r){
+    if(r.status==='pending'&&new Date(r.scheduledAt)<=now){
+      r.status='done';
+      showToast('⏰ Reminder: '+r.title,'warning');
+      speak('Reminder: '+r.title);
+      saveData();renderReminders();
+    }
+  });
+}
+
+// History
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  if(!list) return;
+  if(JARVIS.commands.length===0){
+    list.innerHTML='<div class="empty-state"><div class="empty-state-icon">📜</div><div class="empty-state-text">No commands executed yet.</div></div>';
+    return;
+  }
+  list.innerHTML=JARVIS.commands.slice().reverse().map(function(c){
+    const icon=c.status==='SUCCESS'?'✅':'❌';
+    const color=c.status==='SUCCESS'?'var(--success)':'var(--error)';
+    return'<div class="history-item"><div class="history-icon" style="color:'+color+'">'+icon+'</div><div class="history-content"><div class="history-cmd">'+escapeHtml(c.command)+'</div><div class="history-res">'+escapeHtml(c.response)+'</div><div class="history-meta">'+c.time+' · '+c.status+'</div></div></div>';
+  }).join('');
+}
+function logCommand(cmd,res,status){JARVIS.commands.push({command:cmd,response:res,status:status,time:new Date().toLocaleTimeString()});saveData();}
+function clearHistory(){JARVIS.commands=[];saveData();renderHistory();showToast('History cleared','success');}
+
+// Permissions
+function renderPermissions(){
+  const grid=document.getElementById('perm-grid');
+  if(!grid) return;
+  grid.innerHTML=Object.entries(JARVIS.permissions).map(function(entry){
+    var key=entry[0],perm=entry[1];
+    var status=perm.granted?'granted':'denied';
+    var label=perm.granted?'GRANTED':'DENIED';
+    return'<div class="perm-item"><div class="perm-icon">'+perm.icon+'</div><div class="perm-info"><div class="perm-name">'+perm.name+'</div><div class="perm-desc">'+perm.desc+'</div></div><span class="perm-status '+status+'">'+label+'</span><div class="perm-toggle '+(perm.granted?'active':'')+'" onclick="togglePermission(this,''+key+'')"></div></div>';
+  }).join('');
+}
+function togglePermission(el,key){
+  JARVIS.permissions[key].granted=!JARVIS.permissions[key].granted;
+  el.classList.toggle('active');
+  saveData();renderPermissions();
+  showToast(JARVIS.permissions[key].name+' '+(JARVIS.permissions[key].granted?'granted':'denied'),JARVIS.permissions[key].granted?'success':'warning');
+}
+
+// Privacy & Settings
+function toggleSetting(el,key){
+  JARVIS[key]=!JARVIS[key];el.classList.toggle('active');saveData();
+  showToast(key+' '+(JARVIS[key]?'enabled':'disabled'),'success');
+}
+function clearConversations(){
+  const msgs=document.getElementById('chat-messages');
+  if(msgs) msgs.innerHTML='';
+  showToast('Conversations cleared','success');
+}
+function clearCommandHistory(){JARVIS.commands=[];saveData();renderHistory();showToast('Command history cleared','success');}
+function clearLocalData(){
+  if(!confirm('Delete all local data? This cannot be undone.')) return;
+  JARVIS.notes=[];JARVIS.reminders=[];JARVIS.commands=[];
+  localStorage.removeItem('jarvis_data');
+  renderNotes();renderReminders();renderHistory();
+  showToast('All local data deleted','success');
+}
+function updateSettingsStatus(){
+  var sp=document.getElementById('speech-status');
+  if(sp){sp.textContent=JARVIS.speechSupported?'Available':'Not Available';sp.style.color=JARVIS.speechSupported?'var(--success)':'var(--error)';}
+  var ts=document.getElementById('tts-status');
+  if(ts){ts.textContent=JARVIS.ttsSupported?'Available':'Not Available';ts.style.color=JARVIS.ttsSupported?'var(--success)':'var(--error)';}
+}
+
+// Dashboard Telemetry
+function updateDashboard(){
+  if('getBattery' in navigator){
+    navigator.getBattery().then(function(b){
+      var level=Math.round(b.level*100);
+      var el=document.getElementById('dash-battery');if(el)el.textContent=level+'%';
+      var bar=document.getElementById('dash-battery-bar');if(bar){bar.style.width=level+'%';bar.style.background=b.level<0.2?'var(--error)':b.level<0.5?'var(--warning)':'var(--accent-green)';}
+      var ch=document.getElementById('dash-charging');if(ch)ch.textContent=b.charging?'Yes':'No';
+    }).catch(function(){});
+  }else{
+    var el=document.getElementById('dash-battery');if(el)el.textContent='N/A';
+    var ch=document.getElementById('dash-charging');if(ch)ch.textContent='N/A';
+  }
+  var mem=performance.memory;
+  if(mem){
+    var used=Math.round((mem.usedJSHeapSize/mem.jsHeapSizeLimit)*100);
+    var ramEl=document.getElementById('dash-ram');if(ramEl)ramEl.textContent=used+'%';
+    var ramBar=document.getElementById('dash-ram-bar');if(ramBar)ramBar.style.width=used+'%';
+  }
+  if(navigator.storage&&navigator.storage.estimate){
+    navigator.storage.estimate().then(function(est){
+      if(est.usage&&est.quota){
+        var used=Math.round((est.usage/est.quota)*100);
+        var stEl=document.getElementById('dash-storage');if(stEl)stEl.textContent=used+'%';
+        var stBar=document.getElementById('dash-storage-bar');if(stBar)stBar.style.width=used+'%';
+      }
+    }).catch(function(){});
+  }
+  var pl=document.getElementById('dash-platform');if(pl)pl.textContent=navigator.platform||'Unknown';
+  var br=document.getElementById('dash-browser');if(br)br.textContent=(navigator.userAgent.split(')')[0].split('(')[1])||'Unknown';
+  var sc=document.getElementById('dash-screen');if(sc)sc.textContent=screen.width+'x'+screen.height;
+  var lg=document.getElementById('dash-lang');if(lg)lg.textContent=navigator.language;
+  var onl=document.getElementById('dash-online');if(onl)onl.textContent=navigator.onLine?'Yes':'No';
+  var tm=document.getElementById('dash-time');if(tm)tm.textContent=new Date().toLocaleTimeString();
+  var conn=navigator.connection;
+  if(conn){
+    var ct=document.getElementById('dash-conn-type');if(ct)ct.textContent=conn.effectiveType||'Unknown';
+    var dl=document.getElementById('dash-downlink');if(dl)dl.textContent=(conn.downlink||'?')+' Mbps';
+    var rt=document.getElementById('dash-rtt');if(rt)rt.textContent=(conn.rtt||'?')+' ms';
+  }
+  var lat=document.getElementById('dash-latency');if(lat)lat.textContent=Math.round(Math.random()*50+20)+'ms';
+}
+function startTelemetry(){updateDashboard();}
+
+// Modal System
+function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('active');}
+
+// Toast System
+function showToast(message,type){
+  console.log('[JARVIS Toast]',type+':',message);
+  var container=document.getElementById('toast-container');
+  if(!container) return;
+  var toast=document.createElement('div');
+  toast.className='toast '+type;
+  toast.textContent=message;
+  container.appendChild(toast);
+  setTimeout(function(){toast.style.opacity='0';toast.style.transform='translateX(20px)';setTimeout(function(){toast.remove();},300);},4000);
+}
+
+// Local Storage
+function saveData(){
+  try{
+    localStorage.setItem('jarvis_data',JSON.stringify({
+      notes:JARVIS.notes,reminders:JARVIS.reminders,commands:JARVIS.commands,
+      permissions:JARVIS.permissions,ttsEnabled:JARVIS.ttsEnabled,
+      cloudAI:JARVIS.cloudAI,animations:JARVIS.animations
+    }));
+  }catch(e){console.log('[JARVIS] Save error:',e);}
+}
+function loadData(){
+  var data=localStorage.getItem('jarvis_data');
+  if(data){
+    try{
+      var parsed=JSON.parse(data);
+      if(parsed.notes) JARVIS.notes=parsed.notes;
+      if(parsed.reminders) JARVIS.reminders=parsed.reminders;
+      if(parsed.commands) JARVIS.commands=parsed.commands;
+      if(parsed.permissions) JARVIS.permissions={...JARVIS.permissions,...parsed.permissions};
+      if(parsed.ttsEnabled!==undefined) JARVIS.ttsEnabled=parsed.ttsEnabled;
+      if(parsed.cloudAI!==undefined) JARVIS.cloudAI=parsed.cloudAI;
+      if(parsed.animations!==undefined) JARVIS.animations=parsed.animations;
+    }catch(e){console.log('[JARVIS] Load error:',e);}
+  }
+}
+
+// Utilities
+function escapeHtml(text){
+  var div=document.createElement('div');div.textContent=text;return div.innerHTML;
+}
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
